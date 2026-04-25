@@ -2,8 +2,6 @@
 
 A premium, Japanese-magazine inspired web application to visualize the relationships between anime characters and their voice actors (Seiyuu).
 
-![Koe no Ki Preview](https://via.placeholder.com/1200x630.png?text=Koe+no+Ki+Visual+Seiyuu+Tree)
-
 ## Features
 
 - **Dynamic Relationship Mapping**: Explore the tree of characters voiced by the same Seiyuu.
