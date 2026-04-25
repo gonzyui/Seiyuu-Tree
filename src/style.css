@@ -1,0 +1,96 @@
+:root {
+  --jp-red: #c9171e;
+}
+
+[data-theme='dark'] {
+  --bg-color: #0f0f0f;
+  --card-bg: #1a1a1a;
+  --text-color: #fcfaf2;
+  --glass-bg: rgba(20, 20, 20, 0.9);
+  --glass-border: rgba(201, 23, 30, 0.3);
+  --ink-black: #0f0f0f;
+  --paper-white: #fcfaf2;
+}
+
+[data-theme='light'] {
+  --bg-color: #fcfaf2;
+  --card-bg: #ffffff;
+  --text-color: #0f0f0f;
+  --glass-bg: rgba(252, 250, 242, 0.9);
+  --glass-border: rgba(201, 23, 30, 0.2);
+  --ink-black: #0f0f0f;
+  --paper-white: #fcfaf2;
+}
+
+.bg-kanji {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 60vh;
+  color: var(--jp-red);
+  opacity: 0.03;
+  pointer-events: none;
+  z-index: 0;
+  font-family: 'Noto Serif JP', serif;
+  font-weight: 900;
+}
+
+body {
+  margin: 0;
+  display: flex;
+  place-items: center;
+  min-width: 320px;
+  min-height: 100vh;
+  overflow: hidden;
+  background: var(--bg-color);
+}
+
+#app {
+  width: 100%;
+  height: 100vh;
+}
+
+.serif {
+  font-family: 'Noto Serif JP', serif;
+}
+
+.app-container {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+.glass-panel {
+  background: var(--glass-bg);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--glass-border);
+  border-radius: 4px;
+}
+
+.vertical-text {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+}
+
+.vue-flow__node {
+  padding: 0 !important;
+  border: none !important;
+  background: transparent !important;
+}
+
+.vue-flow__edge-path {
+  stroke: var(--jp-red) !important;
+  stroke-width: 2 !important;
+  opacity: 0.6;
+}
+
+::-webkit-scrollbar {
+  width: 4px;
+}
+::-webkit-scrollbar-track {
+  background: var(--ink-black);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--jp-red);
+}
