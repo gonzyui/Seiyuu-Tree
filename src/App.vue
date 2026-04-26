@@ -13,6 +13,7 @@ import { Search, Loader2, Download, Sun, Moon, Palette } from 'lucide-vue-next'
 import { toPng } from 'html-to-image'
 import { useBreakpoints, breakpointsTailwind } from '@vueuse/core'
 import MobileBlocker from './components/MobileBlocker.vue'
+import { inject } from '@vercel/analytics'
 
 const breakpoints = useBreakpoints(breakpointsTailwind)
 const isMobileOrTablet = breakpoints.smaller('lg') // lg is 1024px
@@ -42,6 +43,7 @@ const toggleTheme = () => {
 
 onMounted(() => {
   document.documentElement.setAttribute('data-theme', theme.value)
+  inject()
 })
 
 const searchQuery = ref('')
