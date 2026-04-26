@@ -22,6 +22,16 @@
   --paper-white: #fcfaf2;
 }
 
+[data-theme='ink'] {
+  --bg-color: #f2ede4;
+  --card-bg: #fcfaf2;
+  --text-color: #1a1a1a;
+  --glass-bg: rgba(242, 237, 228, 0.9);
+  --glass-border: rgba(201, 23, 30, 0.4);
+  --ink-black: #0f0f0f;
+  --paper-white: #fcfaf2;
+}
+
 .bg-kanji {
   position: fixed;
   top: 50%;
@@ -77,6 +87,7 @@ body {
   padding: 0 !important;
   border: none !important;
   background: transparent !important;
+  transform-style: preserve-3d !important;
 }
 
 .vue-flow__edge-path {

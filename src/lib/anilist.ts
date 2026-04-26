@@ -21,14 +21,18 @@ export async function fetchSeiyuuTree(characterId: number): Promise<TreeData> {
     voiceActors: true,
   });
 
-  const voiceActor = character.media?.edges?.[0]?.voiceActors?.find(
-    (va: any) => va.languageV2 === "Japanese"
-  );
+  let voiceActor = null;
+  if (character.media?.edges) {
+    for (const edge of character.media.edges) {
+      voiceActor = edge.voiceActors?.find((va: any) => va.languageV2 === "Japanese");
+      if (voiceActor) break;
+    }
+  }
 
   if (!voiceActor) {
     throw new Error("No Japanese voice actor found for this character.");
   }
-  
+
   const staffQuery = `
     query ($id: Int) {
       Staff(id: $id) {

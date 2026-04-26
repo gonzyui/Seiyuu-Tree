@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ref } from 'vue'
 import { Handle, Position } from '@vue-flow/core'
 
 defineProps<{
@@ -8,10 +9,52 @@ defineProps<{
     nativeName: string
   }
 }>()
+
+const cardRef = ref<HTMLElement | null>(null)
+const tiltX = ref(0)
+const tiltY = ref(0)
+let rafId: number | null = null
+
+const handleMouseMove = (e: MouseEvent) => {
+  if (rafId) return
+  
+  rafId = requestAnimationFrame(() => {
+    if (!cardRef.value) {
+      rafId = null
+      return
+    }
+    const rect = cardRef.value.getBoundingClientRect()
+    const x = e.clientX - rect.left
+    const y = e.clientY - rect.top
+    const centerX = rect.width / 2
+    const centerY = rect.height / 2
+    
+    tiltX.value = (y - centerY) / 8
+    tiltY.value = (centerX - x) / 8
+    rafId = null
+  })
+}
+
+const resetTilt = () => {
+  if (rafId) {
+    cancelAnimationFrame(rafId)
+    rafId = null
+  }
+  tiltX.value = 0
+  tiltY.value = 0
+}
 </script>
 
 <template>
-  <div class="staff-node serif">
+  <div 
+    ref="cardRef"
+    class="staff-node serif"
+    @mousemove="handleMouseMove"
+    @mouseleave="resetTilt"
+    :style="{
+      transform: `perspective(1000px) rotateX(${tiltX}deg) rotateY(${tiltY}deg) scale3d(1.02, 1.02, 1.02)`
+    }"
+  >
     <Handle type="target" :position="Position.Left" />
     <Handle type="source" :position="Position.Right" />
     
@@ -45,6 +88,10 @@ defineProps<{
   box-shadow: 15px 15px 0 var(--jp-red);
   border: 6px solid var(--text-color);
   position: relative;
+  transform-style: preserve-3d;
+  will-change: transform;
+  transition: transform 0.15s ease-out, box-shadow 0.3s ease;
+  pointer-events: all !important;
 }
 
 .staff-node::before {
@@ -66,12 +113,15 @@ defineProps<{
   padding: 0.5rem 0.2rem;
   margin-right: 1.5rem;
   background: rgba(188, 0, 45, 0.05);
+  transform: translateZ(30px);
 }
 
 .staff-content {
   display: flex;
   align-items: center;
   gap: 1.5rem;
+  transform-style: preserve-3d;
+  transform: translateZ(50px);
 }
 
 .image-frame {

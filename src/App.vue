@@ -2,12 +2,20 @@
 import { ref, shallowRef, onMounted } from 'vue'
 import { VueFlow, useVueFlow } from '@vue-flow/core'
 import { Background } from '@vue-flow/background'
+import { MiniMap } from '@vue-flow/minimap'
 import { searchCharacters, fetchSeiyuuTree } from './lib/anilist'
 import CharacterNode from './components/CharacterNode.vue'
 import StaffNode from './components/StaffNode.vue'
+import BrushEdge from './components/BrushEdge.vue'
 import InfoModal from './components/InfoModal.vue'
-import { Search, Loader2, Download, Sun, Moon } from 'lucide-vue-next'
+import InkBackground from './components/InkBackground.vue'
+import { Search, Loader2, Download, Sun, Moon, Palette } from 'lucide-vue-next'
 import { toPng } from 'html-to-image'
+import { useBreakpoints, breakpointsTailwind } from '@vueuse/core'
+import MobileBlocker from './components/MobileBlocker.vue'
+
+const breakpoints = useBreakpoints(breakpointsTailwind)
+const isMobileOrTablet = breakpoints.smaller('lg') // lg is 1024px
 
 const flowId = 'seiyuu-tree-flow'
 const { nodes, edges, setNodes, setEdges, fitView, zoomIn, zoomOut } = useVueFlow({
@@ -19,9 +27,16 @@ const nodeTypes = {
   staff: shallowRef(StaffNode),
 }
 
-const theme = ref<'dark' | 'light'>('dark')
+const edgeTypes = {
+  brush: shallowRef(BrushEdge),
+}
+
+const theme = ref<'dark' | 'light' | 'ink'>('dark')
 const toggleTheme = () => {
-  theme.value = theme.value === 'dark' ? 'light' : 'dark'
+  if (theme.value === 'dark') theme.value = 'light'
+  else if (theme.value === 'light') theme.value = 'ink'
+  else theme.value = 'dark'
+  
   document.documentElement.setAttribute('data-theme', theme.value)
 }
 
@@ -37,6 +52,14 @@ const showResults = ref(false)
 const isModalOpen = ref(false)
 const modalData = ref<any>(null)
 const modalType = ref<'character' | 'staff'>('character')
+
+const errorMessage = ref('')
+const showError = (msg: string) => {
+  errorMessage.value = msg
+  setTimeout(() => {
+    errorMessage.value = ''
+  }, 5000)
+}
 
 const handleSearch = async () => {
   if (searchQuery.value.length < 2) {
@@ -98,6 +121,7 @@ const buildTree = async (characterId: number) => {
       id: `edge-root-staff`,
       source: `char-${data.rootCharacter.id}`,
       target: `staff-${data.voiceActor.id}`,
+      type: 'brush',
       animated: true
     })
 
@@ -122,6 +146,7 @@ const buildTree = async (characterId: number) => {
         id: `edge-staff-${role.character.id}`,
         source: `staff-${data.voiceActor.id}`,
         target: `char-${role.character.id}`,
+        type: 'brush',
         animated: true
       })
     })
@@ -133,9 +158,9 @@ const buildTree = async (characterId: number) => {
       fitView({ padding: 0.3, duration: 1000 })
     }, 200)
     
-  } catch (e) {
+  } catch (e: any) {
     console.error(e)
-    alert("Could not load the tree.")
+    showError(e.message || "Impossible de charger l'arbre.")
   } finally {
     isLoading.value = false
   }
@@ -185,17 +210,22 @@ const exportTree = async () => {
 
 <template>
   <div class="app-container">
+    <MobileBlocker v-if="isMobileOrTablet" />
+    
     <div class="bg-kanji">声</div>
     <div class="paper-texture"></div>
     <div class="sakura-container">
       <div v-for="i in 15" :key="i" class="petal"></div>
     </div>
 
+    <InkBackground v-if="theme === 'ink'" />
+
     <div class="top-bar">
       <div class="actions-group">
-        <button class="action-btn" @click="toggleTheme()" title="Toggle Theme">
-          <Sun v-if="theme === 'dark'" :size="18" />
-          <Moon v-else :size="18" />
+        <button class="action-btn" @click="toggleTheme()" :title="`Theme: ${theme}`">
+          <Sun v-if="theme === 'light'" :size="18" />
+          <Moon v-else-if="theme === 'dark'" :size="18" />
+          <Palette v-else :size="18" />
         </button>
         <button class="action-btn" @click="zoomIn()">+</button>
         <button class="action-btn" @click="zoomOut()">-</button>
@@ -242,6 +272,7 @@ const exportTree = async () => {
       :nodes="nodes"
       :edges="edges"
       :node-types="nodeTypes"
+      :edge-types="edgeTypes"
       @node-click="onNodeClick"
       class="visual-tree"
       :default-zoom="0.6"
@@ -249,6 +280,25 @@ const exportTree = async () => {
       :max-zoom="4"
     >
       <Background pattern-color="#ddd" :gap="40" />
+      
+      <div class="minimap-wrapper">
+        <div class="minimap-label serif">MINI-MAP</div>
+        <MiniMap class="custom-minimap" />
+      </div>
+      
+      <!-- SVG Filters for Brush Effect -->
+      <svg style="position: absolute; width: 0; height: 0;">
+        <defs>
+          <filter id="ink-bleed">
+            <feTurbulence type="fractalNoise" baseFrequency="0.05" numOctaves="2" result="noise" />
+            <feDisplacementMap in="SourceGraphic" in2="noise" scale="3" />
+          </filter>
+          <filter id="rough-edge">
+            <feTurbulence type="turbulence" baseFrequency="0.1" numOctaves="1" result="noise" />
+            <feDisplacementMap in="SourceGraphic" in2="noise" scale="2" />
+          </filter>
+        </defs>
+      </svg>
     </VueFlow>
 
     <InfoModal 
@@ -275,6 +325,17 @@ const exportTree = async () => {
         <a href="https://ani-client.js.org" target="_blank" class="credit-value">ani-client</a>
       </div>
     </footer>
+
+    <Transition name="fade">
+      <div v-if="errorMessage" class="error-toast serif">
+        <div class="hanko-mini">!</div>
+        <div class="error-content">
+          <div class="error-label">ERREUR / ERROR</div>
+          <div class="error-msg">{{ errorMessage }}</div>
+        </div>
+        <button class="close-toast" @click="errorMessage = ''">×</button>
+      </div>
+    </Transition>
   </div>
 </template>
 
@@ -447,9 +508,9 @@ const exportTree = async () => {
 
 .ui-overlay {
   position: absolute;
-  bottom: 4rem; right: 4rem;
-  text-align: right;
-  display: flex; flex-direction: column; align-items: flex-end;
+  bottom: 12rem; left: 3rem;
+  text-align: left;
+  display: flex; flex-direction: column; align-items: flex-start;
 }
 
 .hanko {
@@ -520,6 +581,136 @@ const exportTree = async () => {
 .credit-value:hover {
   color: var(--jp-red);
   transform: translateX(5px);
+}
+
+.error-toast {
+  position: fixed;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--card-bg);
+  border: 4px solid var(--jp-red);
+  box-shadow: 10px 10px 0 var(--ink-black);
+  padding: 1rem 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  z-index: 10001;
+  min-width: 350px;
+}
+
+.hanko-mini {
+  background: var(--jp-red);
+  color: white;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  font-size: 1.2rem;
+}
+
+.error-content {
+  flex: 1;
+}
+
+.error-label {
+  font-size: 0.6rem;
+  font-weight: 900;
+  color: var(--jp-red);
+  letter-spacing: 0.2em;
+  margin-bottom: 0.2rem;
+}
+
+.error-msg {
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.close-toast {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: var(--text-color);
+  opacity: 0.5;
+}
+
+.close-toast:hover {
+  opacity: 1;
+}
+
+.fade-enter-active, .fade-leave-active {
+  transition: all 0.3s ease;
+}
+.fade-enter-from, .fade-leave-to {
+  opacity: 0;
+  transform: translate(-50%, 20px);
+}
+
+.minimap-wrapper {
+  position: absolute;
+  bottom: 3rem;
+  right: 3rem;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.minimap-label {
+  font-size: 0.7rem;
+  font-weight: 900;
+  color: var(--jp-red);
+  letter-spacing: 0.3em;
+  background: var(--card-bg);
+  padding: 0.2rem 1rem;
+  border: 1px solid var(--jp-red);
+  box-shadow: 4px 4px 0 var(--ink-black);
+}
+
+.custom-minimap {
+  background: var(--card-bg) !important;
+  border: 4px solid var(--jp-red) !important;
+  border-radius: 50% !important;
+  width: 180px !important;
+  height: 180px !important;
+  position: static !important;
+  overflow: hidden !important;
+  clip-path: circle(50%);
+  box-shadow: none !important;
+}
+
+.minimap-wrapper::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 180px;
+  height: 180px;
+  background: var(--ink-black);
+  border-radius: 50%;
+  z-index: -1;
+  transform: translate(10px, 10px);
+}
+
+.custom-minimap .vue-flow__minimap-mask {
+  fill: var(--jp-red) !important;
+  fill-opacity: 0.1 !important;
+}
+
+.custom-minimap .vue-flow__minimap-node {
+  fill: var(--jp-red) !important;
+  rx: 2;
+  ry: 2;
+}
+
+.vue-flow__minimap-node.staff {
+  fill: var(--text-color) !important;
+  stroke: var(--jp-red) !important;
+  stroke-width: 2;
 }
 
 ::-webkit-scrollbar {

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { ref } from 'vue'
+
 defineProps<{
   data: {
     image: string
@@ -9,10 +11,53 @@ defineProps<{
     animeTitle?: string
   }
 }>()
+
+const cardRef = ref<HTMLElement | null>(null)
+const tiltX = ref(0)
+const tiltY = ref(0)
+let rafId: number | null = null
+
+const handleMouseMove = (e: MouseEvent) => {
+  if (rafId) return
+  
+  rafId = requestAnimationFrame(() => {
+    if (!cardRef.value) {
+      rafId = null
+      return
+    }
+    const rect = cardRef.value.getBoundingClientRect()
+    const x = e.clientX - rect.left
+    const y = e.clientY - rect.top
+    const centerX = rect.width / 2
+    const centerY = rect.height / 2
+    
+    tiltX.value = (y - centerY) / 8
+    tiltY.value = (centerX - x) / 8
+    rafId = null
+  })
+}
+
+const resetTilt = () => {
+  if (rafId) {
+    cancelAnimationFrame(rafId)
+    rafId = null
+  }
+  tiltX.value = 0
+  tiltY.value = 0
+}
 </script>
 
 <template>
-  <div class="character-card" :class="{ 'root-node': data.isRoot }">
+  <div 
+    ref="cardRef"
+    class="character-card" 
+    :class="{ 'root-node': data.isRoot }"
+    @mousemove="handleMouseMove"
+    @mouseleave="resetTilt"
+    :style="{
+      transform: `perspective(1000px) rotateX(${tiltX}deg) rotateY(${tiltY}deg) scale3d(1.02, 1.02, 1.02)`
+    }"
+  >
     <div class="card-content">
       <img :src="data.image" alt="" />
       
@@ -35,14 +80,16 @@ defineProps<{
   display: flex;
   position: relative;
   min-width: 240px;
-  overflow: hidden;
+  overflow: visible;
   box-shadow: 10px 10px 0 rgba(0,0,0,0.2);
-  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  transition: transform 0.15s ease-out, box-shadow 0.3s ease;
   cursor: pointer;
+  transform-style: preserve-3d;
+  will-change: transform;
+  pointer-events: all !important;
 }
 
 .character-card:hover {
-  transform: translateY(-8px) scale(1.02);
   box-shadow: 15px 15px 0 rgba(188, 0, 45, 0.2);
 }
 
@@ -55,6 +102,8 @@ defineProps<{
   display: flex;
   flex: 1;
   background: linear-gradient(90deg, transparent 50%, rgba(212, 175, 55, 0.05) 100%);
+  transform: translateZ(20px);
+  transform-style: preserve-3d;
 }
 
 img {
@@ -62,6 +111,7 @@ img {
   height: 160px;
   object-fit: cover;
   border-right: 2px solid var(--ink-black);
+  transform: translateZ(40px);
 }
 
 .names {
@@ -70,6 +120,7 @@ img {
   display: flex;
   flex-direction: column;
   position: relative;
+  transform: translateZ(60px);
 }
 
 .native-name {
