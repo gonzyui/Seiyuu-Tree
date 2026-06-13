@@ -29,8 +29,8 @@ const handleMouseMove = (e: MouseEvent) => {
     const centerX = rect.width / 2
     const centerY = rect.height / 2
     
-    tiltX.value = (y - centerY) / 8
-    tiltY.value = (centerX - x) / 8
+    tiltX.value = (y - centerY) / 15
+    tiltY.value = (centerX - x) / 15
     rafId = null
   })
 }
@@ -48,122 +48,144 @@ const resetTilt = () => {
 <template>
   <div 
     ref="cardRef"
-    class="staff-node serif"
+    class="staff-node sketch-panel"
     @mousemove="handleMouseMove"
     @mouseleave="resetTilt"
     :style="{
       transform: `perspective(1000px) rotateX(${tiltX}deg) rotateY(${tiltY}deg) scale3d(1.02, 1.02, 1.02)`
     }"
   >
-    <Handle type="target" :position="Position.Left" />
-    <Handle type="source" :position="Position.Right" />
+    <div class="tape-top-left"></div>
+    <div class="tape-bottom-right"></div>
     
-    <div class="role-label vertical-text">声優</div>
-
+    <Handle type="target" :position="Position.Left" class="custom-handle" />
+    <Handle type="source" :position="Position.Right" class="custom-handle" />
+    
     <div class="staff-content">
       <div class="image-frame">
         <img :src="data.image" alt="" />
       </div>
       
       <div class="staff-info">
-        <div class="native">{{ data.nativeName }}</div>
-        <div class="full">{{ data.name }}</div>
-        <div class="click-hint">Click for Info</div>
+        <div class="role-badge hand-font">Seiyuu (Voice)</div>
+        <div class="native serif-font">{{ data.nativeName }}</div>
+        <div class="full hand-font">{{ data.name }}</div>
       </div>
     </div>
-
-    <div class="brush-stroke"></div>
+    
+    <div class="scribble"></div>
   </div>
 </template>
 
 <style scoped>
 .staff-node {
-  background: var(--card-bg);
-  color: var(--text-color);
-  padding: 2rem;
-  display: flex;
-  align-items: center;
-  border-radius: 0;
+  padding: 20px;
   min-width: 300px;
-  box-shadow: 15px 15px 0 var(--jp-red);
-  border: 6px solid var(--text-color);
   position: relative;
   transform-style: preserve-3d;
   will-change: transform;
-  transition: transform 0.15s ease-out, box-shadow 0.3s ease;
+  transition: transform 0.2s ease-out, box-shadow 0.3s ease;
   pointer-events: all !important;
+  background-color: var(--card-bg);
 }
 
-.staff-node::before {
-  content: '';
+.tape-top-left, .tape-bottom-right {
   position: absolute;
-  top: -10px;
-  left: -10px;
-  right: -10px;
-  bottom: -10px;
-  border: 1px solid var(--text-color);
-  pointer-events: none;
+  width: 60px;
+  height: 20px;
+  background-color: var(--tape-color);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+  z-index: 10;
+  opacity: 0.8;
 }
 
-.role-label {
-  font-size: 0.8rem;
-  font-weight: 900;
-  color: var(--jp-red);
-  border: 1px solid var(--jp-red);
-  padding: 0.5rem 0.2rem;
-  margin-right: 1.5rem;
-  background: rgba(188, 0, 45, 0.05);
-  transform: translateZ(30px);
+.tape-top-left {
+  top: -8px;
+  left: -15px;
+  transform: rotate(-45deg);
+}
+
+.tape-bottom-right {
+  bottom: -8px;
+  right: -15px;
+  transform: rotate(-45deg);
+}
+
+.staff-node:hover {
+  box-shadow: 10px 10px 0 var(--shadow-color);
 }
 
 .staff-content {
   display: flex;
   align-items: center;
   gap: 1.5rem;
-  transform-style: preserve-3d;
-  transform: translateZ(50px);
 }
 
 .image-frame {
-  width: 80px;
-  height: 80px;
+  width: 90px;
+  height: 90px;
   border-radius: 50%;
-  overflow: hidden;
-  border: 3px solid var(--jp-red);
+  padding: 4px;
+  border: 2px dashed var(--pencil-gray);
+  position: relative;
   flex-shrink: 0;
+  background: var(--bg-color);
 }
 
 .image-frame img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  border-radius: 50%;
+  filter: sepia(50%) hue-rotate(-10deg) saturate(1.5) contrast(1.1);
 }
 
 .staff-info {
-  text-align: center;
+  text-align: left;
+}
+
+.role-badge {
+  font-size: 1.2rem;
+  color: var(--jp-red);
+  margin-bottom: 0.2rem;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 2px;
 }
 
 .native {
-  font-size: 1.1rem;
+  font-size: 1.8rem;
   font-weight: 700;
+  color: var(--text-color);
+  line-height: 1.1;
+  margin-bottom: 0.2rem;
 }
 
 .full {
-  font-size: 0.75rem;
-  opacity: 0.7;
+  font-size: 1.2rem;
+  color: var(--text-muted);
 }
 
-.click-hint {
-  font-size: 0.6rem;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: var(--jp-red);
-  margin-top: 0.5rem;
+.custom-handle {
+  width: 14px;
+  height: 14px;
+  background: var(--card-bg);
+  border: 2px solid var(--pencil-gray);
+  border-radius: 50%;
   opacity: 0;
   transition: opacity 0.3s;
 }
 
-.staff-node:hover .click-hint {
+.staff-node:hover .custom-handle {
   opacity: 1;
+}
+
+.scribble {
+  position: absolute;
+  bottom: 10px;
+  right: 20px;
+  width: 40px;
+  height: 10px;
+  border-bottom: 2px dashed var(--border-color);
+  transform: rotate(-5deg);
 }
 </style>

@@ -2,14 +2,12 @@
 import { ref, shallowRef, onMounted } from 'vue'
 import { VueFlow, useVueFlow } from '@vue-flow/core'
 import { Background } from '@vue-flow/background'
-import { MiniMap } from '@vue-flow/minimap'
 import { searchCharacters, fetchSeiyuuTree } from './lib/anilist'
 import CharacterNode from './components/CharacterNode.vue'
 import StaffNode from './components/StaffNode.vue'
 import BrushEdge from './components/BrushEdge.vue'
 import InfoModal from './components/InfoModal.vue'
-import InkBackground from './components/InkBackground.vue'
-import { Search, Loader2, Download, Sun, Moon, Palette } from 'lucide-vue-next'
+import { Search, Loader2, Download, Sun, Moon } from 'lucide-vue-next'
 import { toPng } from 'html-to-image'
 import { useBreakpoints, breakpointsTailwind } from '@vueuse/core'
 import MobileBlocker from './components/MobileBlocker.vue'
@@ -32,11 +30,10 @@ const edgeTypes = {
   brush: shallowRef(BrushEdge),
 }
 
-const theme = ref<'dark' | 'light' | 'ink'>('dark')
+const theme = ref<'light' | 'dark' | 'ink'>('light')
 const toggleTheme = () => {
-  if (theme.value === 'dark') theme.value = 'light'
-  else if (theme.value === 'light') theme.value = 'ink'
-  else theme.value = 'dark'
+  if (theme.value === 'light') theme.value = 'dark'
+  else theme.value = 'light'
   
   document.documentElement.setAttribute('data-theme', theme.value)
 }
@@ -110,7 +107,7 @@ const buildTree = async (characterId: number) => {
     newNodes.push({
       id: `staff-${data.voiceActor.id}`,
       type: 'staff',
-      position: { x: 700, y: 0 },
+      position: { x: 500, y: 0 },
       data: {
         ...data.voiceActor,
         image: data.voiceActor.image.large,
@@ -127,14 +124,18 @@ const buildTree = async (characterId: number) => {
       animated: true
     })
 
-    const spacing = 300
+    const spacing = 180
     const startY = -((data.otherRoles.length - 1) * spacing) / 2
     
     data.otherRoles.forEach((role, index) => {
+      const centerIndex = (data.otherRoles.length - 1) / 2
+      const distanceFromCenter = Math.abs(index - centerIndex)
+      const curveX = Math.pow(distanceFromCenter, 2) * 12
+
       newNodes.push({
         id: `char-${role.character.id}`,
         type: 'character',
-        position: { x: 1400, y: startY + index * spacing },
+        position: { x: 1000 + curveX, y: startY + index * spacing },
         data: {
           ...role.character,
           image: role.character.image.medium,
@@ -157,12 +158,12 @@ const buildTree = async (characterId: number) => {
     setEdges(newEdges)
     
     setTimeout(() => {
-      fitView({ padding: 0.3, duration: 1000 })
+      fitView({ padding: 0.2, duration: 1000, minZoom: 0.5 })
     }, 200)
     
   } catch (e: any) {
     console.error(e)
-    showError(e.message || "Impossible de charger l'arbre.")
+    showError(e.message || "Impossible to load tree.")
   } finally {
     isLoading.value = false
   }
@@ -185,19 +186,19 @@ const exportTree = async () => {
   
   isLoading.value = true
   try {
-    const uiElements = document.querySelectorAll('.top-bar, .app-footer, .ui-overlay p, .bg-kanji')
+    const uiElements = document.querySelectorAll('.top-bar, .app-footer, .ui-overlay')
     uiElements.forEach(el => (el as HTMLElement).style.opacity = '0')
     
     await new Promise(r => setTimeout(r, 100))
 
     const dataUrl = await toPng(el, {
-      backgroundColor: theme.value === 'dark' ? '#0f0f0f' : '#fcfaf2',
+      backgroundColor: theme.value === 'dark' ? '#1e1e1e' : '#f4f1ea',
       cacheBust: true,
       skipFonts: true,
     })
     
     const link = document.createElement('a')
-    link.download = `koe-no-ki-${Date.now()}.png`
+    link.download = `seiyuu-tree-sketch-${Date.now()}.png`
     link.href = dataUrl
     link.click()
     
@@ -211,48 +212,39 @@ const exportTree = async () => {
 </script>
 
 <template>
-  <div class="app-container">
+  <div class="app-container hand-font">
     <MobileBlocker v-if="isMobileOrTablet" />
     
-    <div class="bg-kanji">声</div>
-    <div class="paper-texture"></div>
-    <div class="sakura-container">
-      <div v-for="i in 15" :key="i" class="petal"></div>
-    </div>
-
-    <InkBackground v-if="theme === 'ink'" />
-
     <div class="top-bar">
       <div class="actions-group">
-        <button class="action-btn" @click="toggleTheme()" :title="`Theme: ${theme}`">
-          <Sun v-if="theme === 'light'" :size="18" />
-          <Moon v-else-if="theme === 'dark'" :size="18" />
-          <Palette v-else :size="18" />
+        <button class="action-btn sketch-panel" @click="toggleTheme()" :title="`Theme: ${theme}`">
+          <Sun v-if="theme === 'light'" :size="20" />
+          <Moon v-else :size="20" />
         </button>
-        <button class="action-btn" @click="zoomIn()">+</button>
-        <button class="action-btn" @click="zoomOut()">-</button>
-        <button class="action-btn highlight" @click="exportTree" :disabled="isLoading">
+        <button class="action-btn sketch-panel" @click="zoomIn()">+</button>
+        <button class="action-btn sketch-panel" @click="zoomOut()">-</button>
+        <button class="action-btn sketch-panel highlight" @click="exportTree" :disabled="isLoading">
           <Download :size="18" />
-          <span>SHIKISHI EXPORT</span>
+          <span class="btn-text">Draw Export</span>
         </button>
       </div>
 
       <div class="search-container">
-        <div class="search-bar">
+        <div class="search-bar sketch-panel">
           <input 
             v-model="searchQuery" 
             @input="handleSearch" 
             @keyup.enter="handleSearch"
-            placeholder="Search character (e.g. Lelouch)"
-            class="search-input"
+            placeholder="Search character..."
+            class="search-input hand-font"
           />
           <div class="search-icon">
             <Loader2 v-if="isLoading" class="animate-spin" />
-            <Search v-else />
+            <Search v-else :size="18" />
           </div>
         </div>
 
-        <div v-if="showResults && searchResults.length > 0" class="search-results glass-panel">
+        <div v-if="showResults && searchResults.length > 0" class="search-results sketch-panel">
           <div 
             v-for="result in searchResults" 
             :key="result.id" 
@@ -261,8 +253,8 @@ const exportTree = async () => {
           >
             <img :src="result.image.medium" alt="" />
             <div class="result-info">
-              <div class="serif">{{ result.name.full }}</div>
-              <div class="native-sub">{{ result.name.native }}</div>
+              <div class="main-name hand-font">{{ result.name.full }}</div>
+              <div class="sub-name serif-font">{{ result.name.native }}</div>
             </div>
           </div>
         </div>
@@ -278,26 +270,18 @@ const exportTree = async () => {
       @node-click="onNodeClick"
       class="visual-tree"
       :default-zoom="0.6"
-      :min-zoom="0.1"
+      :min-zoom="0.3"
       :max-zoom="4"
     >
-      <Background pattern-color="#ddd" :gap="40" />
+      <!-- Background pattern like dot grid paper -->
+      <Background pattern-color="var(--border-color)" :gap="25" :size="1.5" />
       
-      <div class="minimap-wrapper">
-        <div class="minimap-label serif">MINI-MAP</div>
-        <MiniMap class="custom-minimap" />
-      </div>
-      
-      <!-- SVG Filters for Brush Effect -->
+      <!-- SVG Filters for Pencil Effect -->
       <svg style="position: absolute; width: 0; height: 0;">
         <defs>
-          <filter id="ink-bleed">
-            <feTurbulence type="fractalNoise" baseFrequency="0.05" numOctaves="2" result="noise" />
-            <feDisplacementMap in="SourceGraphic" in2="noise" scale="3" />
-          </filter>
-          <filter id="rough-edge">
-            <feTurbulence type="turbulence" baseFrequency="0.1" numOctaves="1" result="noise" />
-            <feDisplacementMap in="SourceGraphic" in2="noise" scale="2" />
+          <filter id="pencil-stroke" x="-20%" y="-20%" width="140%" height="140%">
+            <feTurbulence type="fractalNoise" baseFrequency="0.05" numOctaves="3" result="noise" />
+            <feDisplacementMap in="SourceGraphic" in2="noise" scale="3" xChannelSelector="R" yChannelSelector="G" />
           </filter>
         </defs>
       </svg>
@@ -311,28 +295,29 @@ const exportTree = async () => {
       @explore="handleExplore"
     />
 
-    <div class="ui-overlay serif">
-      <div class="hanko">声</div>
-      <h1 class="vertical-text">声の木</h1>
-      <p>Visual Seiyuu Tree</p>
+    <div class="ui-overlay">
+      <div class="hanko serif-font">声</div>
+      <div class="overlay-text">
+        <h1 class="serif-font">Seiyuu Tree</h1>
+        <p class="hand-font">Discover the voice behind the character (Sketches)</p>
+      </div>
     </div>
 
-    <footer class="app-footer serif">
-      <div class="credit-block">
-        <span class="credit-label">制作</span>
-        <a href="https://gonzyuidev.xyz" target="_blank" class="credit-value">gonzyui</a>
+    <footer class="app-footer">
+      <div class="credit-block sketch-panel">
+        <span class="credit-label">Drawn by</span>
+        <a href="https://gonzyuidev.xyz" target="_blank" class="credit-value hand-font">gonzyui</a>
       </div>
-      <div class="credit-block">
-        <span class="credit-label">技術</span>
-        <a href="https://ani-client.js.org" target="_blank" class="credit-value">ani-client</a>
+      <div class="credit-block sketch-panel">
+        <span class="credit-label">Ink from</span>
+        <a href="https://ani-client.js.org" target="_blank" class="credit-value hand-font">ani-client</a>
       </div>
     </footer>
 
-    <Transition name="fade">
-      <div v-if="errorMessage" class="error-toast serif">
-        <div class="hanko-mini">!</div>
+    <Transition name="slide-up">
+      <div v-if="errorMessage" class="error-toast sketch-panel">
+        <div class="error-icon hand-font">!</div>
         <div class="error-content">
-          <div class="error-label">ERREUR / ERROR</div>
           <div class="error-msg">{{ errorMessage }}</div>
         </div>
         <button class="close-toast" @click="errorMessage = ''">×</button>
@@ -345,38 +330,6 @@ const exportTree = async () => {
 @import '@vue-flow/core/dist/style.css';
 @import '@vue-flow/core/dist/theme-default.css';
 
-.paper-texture {
-  position: fixed;
-  top: 0; left: 0; width: 100%; height: 100%;
-  pointer-events: none; z-index: 999;
-  opacity: 0.1;
-  background-image: url('https://www.transparenttextures.com/patterns/parchment.png');
-}
-
-.petal {
-  position: fixed;
-  background: #ffb7c5;
-  border-radius: 150% 0 150% 0;
-  width: 15px;
-  height: 15px;
-  z-index: 998;
-  opacity: 0.3;
-  pointer-events: none;
-  animation: fall 10s linear infinite;
-}
-
-@keyframes fall {
-  0% { transform: translateY(-10vh) rotate(0deg); left: var(--left); }
-  100% { transform: translateY(110vh) rotate(360deg); left: var(--left-end); }
-}
-
-.petal:nth-child(odd) { background: #ffd1dc; }
-.petal:nth-child(1) { --left: 10%; --left-end: 20%; animation-delay: 0s; }
-.petal:nth-child(2) { --left: 30%; --left-end: 25%; animation-delay: 2s; }
-.petal:nth-child(3) { --left: 50%; --left-end: 60%; animation-delay: 4s; }
-.petal:nth-child(4) { --left: 70%; --left-end: 65%; animation-delay: 6s; }
-.petal:nth-child(5) { --left: 90%; --left-end: 80%; animation-delay: 8s; }
-
 .top-bar {
   position: fixed;
   top: 0; left: 0; width: 100%; height: 0;
@@ -384,65 +337,100 @@ const exportTree = async () => {
   pointer-events: none;
 }
 
+.actions-group {
+  position: absolute;
+  top: 2rem; left: 2rem;
+  display: flex; gap: 0.75rem;
+  pointer-events: auto;
+}
+
+.action-btn {
+  color: var(--text-color);
+  padding: 0 1rem;
+  height: 44px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-weight: 700;
+  font-size: 1.1rem;
+  transition: all 0.2s ease;
+  overflow: hidden;
+  position: relative;
+}
+
+.action-btn:hover {
+  transform: translateY(-2px) rotate(-2deg);
+  box-shadow: 6px 6px 0 var(--shadow-color);
+}
+
+.action-btn.highlight {
+  color: var(--jp-red);
+  border-color: var(--jp-red);
+}
+
 .search-container {
   position: absolute;
-  top: 3rem; right: 6rem;
-  width: 300px;
-  max-width: 30vw;
+  top: 2rem; right: 2rem;
+  width: 320px;
   pointer-events: auto;
 }
 
 .search-bar {
-  position: relative;
   display: flex;
   align-items: center;
+  padding: 0.3rem 0.5rem;
+  transition: transform 0.3s;
+}
+
+.search-bar:focus-within {
+  transform: scale(1.02);
 }
 
 .search-input {
-  width: 100%;
-  padding: 0.6rem 2.5rem 0.6rem 1.2rem;
-  background: var(--card-bg);
-  border: 4px solid var(--text-color);
+  flex: 1;
+  background: transparent;
+  border: none;
   color: var(--text-color);
-  font-family: 'Noto Serif JP', serif;
-  font-size: 0.9rem;
-  font-weight: 700;
+  font-size: 1.2rem;
+  padding: 0.4rem 0.8rem;
   outline: none;
-  box-shadow: 6px 6px 0 var(--jp-red);
+}
+
+.search-input::placeholder {
+  color: var(--text-muted);
 }
 
 .search-icon {
-  position: absolute;
-  right: 1rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--text-color);
-  opacity: 0.6;
-  pointer-events: none;
+  color: var(--text-muted);
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
 }
 
 .search-results {
   position: absolute;
-  top: 100%;
+  top: calc(100% + 1rem);
   right: 0;
   width: 100%;
-  margin-top: 2rem;
-  border: 5px solid var(--ink-black);
-  box-shadow: 15px 15px 0 var(--ink-black);
-  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
 }
 
 .result-item {
-  background: var(--card-bg);
   display: flex;
   align-items: center;
-  padding: 0.4rem 1rem;
+  padding: 0.75rem 1rem;
   cursor: pointer;
-  transition: all 0.2s ease;
-  border-bottom: 1px solid var(--glass-border);
-  color: var(--text-color);
-  gap: 0.8rem;
+  transition: background 0.2s;
+  gap: 1rem;
+  border-bottom: 2px dashed var(--border-color);
 }
 
 .result-item:last-child {
@@ -450,15 +438,17 @@ const exportTree = async () => {
 }
 
 .result-item:hover {
-  background: var(--jp-red);
-  color: var(--paper-white);
+  background: var(--border-color);
 }
 
 .result-item img {
-  width: 35px;
-  height: 50px;
+  width: 40px;
+  height: 40px;
+  border-radius: 4px;
   object-fit: cover;
-  border: 1px solid var(--ink-black);
+  border: 2px solid var(--text-color);
+  box-shadow: 2px 2px 0 var(--shadow-color);
+  filter: grayscale(20%) sepia(20%);
 }
 
 .result-info {
@@ -466,123 +456,104 @@ const exportTree = async () => {
   flex-direction: column;
 }
 
-.result-info .serif {
-  font-size: 0.85rem;
+.main-name {
+  font-size: 1.1rem;
   font-weight: 700;
-  line-height: 1.2;
-}
-
-.native-sub {
-  font-size: 0.6rem;
-  opacity: 0.6;
-}
-
-.actions-group {
-  position: absolute;
-  top: 3rem; left: 3rem;
-  display: flex; gap: 1rem;
-  pointer-events: auto;
-}
-
-.action-btn {
-  background: var(--card-bg);
-  border: 3px solid var(--text-color);
   color: var(--text-color);
-  padding: 0.5rem 1.5rem;
-  font-family: 'Noto Serif JP', serif;
-  font-weight: 900;
-  cursor: pointer;
-  height: 50px;
-  box-shadow: 5px 5px 0 var(--ink-black);
 }
 
-.action-btn.highlight {
-  background: var(--jp-red);
-  color: var(--paper-white);
-  border-color: var(--ink-black);
-  box-shadow: 5px 5px 0 var(--ink-black);
+.sub-name {
+  font-size: 0.85rem;
+  color: var(--text-muted);
 }
 
 .visual-tree {
   width: 100%; height: 100%;
-  background: var(--bg-color);
+  background: transparent;
+  z-index: 10;
 }
 
 .ui-overlay {
   position: absolute;
-  bottom: 12rem; left: 3rem;
+  bottom: 3rem; left: 2rem;
   text-align: left;
-  display: flex; flex-direction: column; align-items: flex-start;
+  z-index: 20;
+  pointer-events: none;
+  display: flex;
+  gap: 1rem;
+  align-items: flex-end;
 }
 
 .hanko {
-  background: var(--jp-red);
-  color: var(--paper-white);
-  font-size: 2.5rem;
-  padding: 0.2rem 0.8rem;
-  margin-bottom: 2rem;
-  border: 4px solid var(--paper-white);
-  box-shadow: 0 0 0 4px var(--jp-red);
+  width: 60px;
+  height: 60px;
+  background-color: var(--jp-red);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  font-weight: bold;
+  border-radius: 8px;
+  border: 3px solid #fff;
+  box-shadow: 0 0 0 3px var(--jp-red), 4px 4px 0 var(--shadow-color);
+  transform: rotate(-10deg);
+  margin-bottom: 10px;
 }
 
-.ui-overlay h1 {
-  font-size: 8rem;
+.overlay-text h1 {
+  font-size: 4rem;
   color: var(--text-color);
+  margin: 0;
   line-height: 1;
-  text-shadow: 6px 6px 0 var(--jp-red);
 }
 
-.ui-overlay p {
+.overlay-text p {
   margin: 0.5rem 0 0 0;
-  font-size: 0.9rem;
-  letter-spacing: 0.5em;
-  text-transform: uppercase;
-  color: var(--jp-red);
-  font-weight: 700;
+  font-size: 1.2rem;
+  color: var(--text-muted);
 }
 
 .app-footer {
   position: absolute;
-  bottom: 3rem;
-  left: 3rem;
+  bottom: 2rem;
+  right: 2rem;
   display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
+  gap: 1rem;
   z-index: 100;
-  color: var(--text-color);
+  pointer-events: auto;
 }
 
 .credit-block {
+  padding: 0.5rem 1rem;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  position: relative;
-  padding-left: 1rem;
-  border-left: 3px solid var(--jp-red);
+  gap: 0;
+  transition: transform 0.2s;
+  background: var(--card-bg);
+}
+
+.credit-block:hover {
+  transform: translateY(-2px) rotate(2deg);
 }
 
 .credit-label {
-  font-size: 0.6rem;
-  font-weight: 900;
-  color: var(--jp-red);
-  letter-spacing: 0.3em;
+  font-size: 0.7rem;
+  color: var(--text-muted);
   text-transform: uppercase;
-  margin-bottom: 0.2rem;
+  letter-spacing: 0.1em;
 }
 
 .credit-value {
-  font-size: 1rem;
-  font-weight: 900;
+  font-size: 1.1rem;
+  font-weight: 700;
   color: var(--text-color);
   text-decoration: none;
-  letter-spacing: 0.1em;
-  transition: all 0.3s;
-  display: inline-block;
+  transition: color 0.2s;
 }
 
 .credit-value:hover {
   color: var(--jp-red);
-  transform: translateX(5px);
 }
 
 .error-toast {
@@ -590,44 +561,23 @@ const exportTree = async () => {
   bottom: 2rem;
   left: 50%;
   transform: translateX(-50%);
-  background: var(--card-bg);
-  border: 4px solid var(--jp-red);
-  box-shadow: 10px 10px 0 var(--ink-black);
   padding: 1rem 1.5rem;
   display: flex;
   align-items: center;
-  gap: 1.5rem;
+  gap: 1rem;
   z-index: 10001;
-  min-width: 350px;
+  border-left: 6px solid var(--jp-red);
 }
 
-.hanko-mini {
-  background: var(--jp-red);
-  color: white;
-  width: 30px;
-  height: 30px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 900;
-  font-size: 1.2rem;
-}
-
-.error-content {
-  flex: 1;
-}
-
-.error-label {
-  font-size: 0.6rem;
-  font-weight: 900;
+.error-icon {
   color: var(--jp-red);
-  letter-spacing: 0.2em;
-  margin-bottom: 0.2rem;
+  font-weight: bold;
+  font-size: 1.5rem;
 }
 
 .error-msg {
-  font-size: 0.9rem;
-  font-weight: 700;
+  font-size: 1.1rem;
+  color: var(--text-color);
 }
 
 .close-toast {
@@ -635,93 +585,16 @@ const exportTree = async () => {
   border: none;
   font-size: 1.5rem;
   cursor: pointer;
-  color: var(--text-color);
-  opacity: 0.5;
+  color: var(--text-muted);
+  padding: 0;
+  margin-left: 1rem;
 }
 
-.close-toast:hover {
-  opacity: 1;
+.slide-up-enter-active, .slide-up-leave-active {
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
-
-.fade-enter-active, .fade-leave-active {
-  transition: all 0.3s ease;
-}
-.fade-enter-from, .fade-leave-to {
+.slide-up-enter-from, .slide-up-leave-to {
   opacity: 0;
-  transform: translate(-50%, 20px);
-}
-
-.minimap-wrapper {
-  position: absolute;
-  bottom: 3rem;
-  right: 3rem;
-  z-index: 1000;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1.5rem;
-}
-
-.minimap-label {
-  font-size: 0.7rem;
-  font-weight: 900;
-  color: var(--jp-red);
-  letter-spacing: 0.3em;
-  background: var(--card-bg);
-  padding: 0.2rem 1rem;
-  border: 1px solid var(--jp-red);
-  box-shadow: 4px 4px 0 var(--ink-black);
-}
-
-.custom-minimap {
-  background: var(--card-bg) !important;
-  border: 4px solid var(--jp-red) !important;
-  border-radius: 50% !important;
-  width: 180px !important;
-  height: 180px !important;
-  position: static !important;
-  overflow: hidden !important;
-  clip-path: circle(50%);
-  box-shadow: none !important;
-}
-
-.minimap-wrapper::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  right: 0;
-  width: 180px;
-  height: 180px;
-  background: var(--ink-black);
-  border-radius: 50%;
-  z-index: -1;
-  transform: translate(10px, 10px);
-}
-
-.custom-minimap .vue-flow__minimap-mask {
-  fill: var(--jp-red) !important;
-  fill-opacity: 0.1 !important;
-}
-
-.custom-minimap .vue-flow__minimap-node {
-  fill: var(--jp-red) !important;
-  rx: 2;
-  ry: 2;
-}
-
-.vue-flow__minimap-node.staff {
-  fill: var(--text-color) !important;
-  stroke: var(--jp-red) !important;
-  stroke-width: 2;
-}
-
-::-webkit-scrollbar {
-  width: 4px;
-}
-::-webkit-scrollbar-track {
-  background: var(--ink-black);
-}
-::-webkit-scrollbar-thumb {
-  background: var(--jp-red);
+  transform: translate(-50%, 40px);
 }
 </style>

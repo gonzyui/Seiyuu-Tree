@@ -1,49 +1,29 @@
+@import url('https://fonts.googleapis.com/css2?family=Kalam:wght@300;400;700&family=Shippori+Mincho:wght@400;500;600;700;800&display=swap');
+
 :root {
-  --jp-red: #c9171e;
+  --jp-red: #bc002d;
+  --pencil-gray: #3a3b3c;
+  --tape-color: rgba(238, 232, 205, 0.8);
+  --paper-texture: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.08'/%3E%3C/svg%3E");
 }
 
 [data-theme='dark'] {
-  --bg-color: #0f0f0f;
-  --card-bg: #1a1a1a;
-  --text-color: #fcfaf2;
-  --glass-bg: rgba(20, 20, 20, 0.9);
-  --glass-border: rgba(201, 23, 30, 0.3);
-  --ink-black: #0f0f0f;
-  --paper-white: #fcfaf2;
+  --bg-color: #1e1e1e;
+  --card-bg: #2a2a2a;
+  --text-color: #e8e6e3;
+  --text-muted: #9a9a9a;
+  --border-color: #4a4a4a;
+  --shadow-color: rgba(0, 0, 0, 0.4);
 }
 
-[data-theme='light'] {
-  --bg-color: #fcfaf2;
-  --card-bg: #ffffff;
-  --text-color: #0f0f0f;
-  --glass-bg: rgba(252, 250, 242, 0.9);
-  --glass-border: rgba(201, 23, 30, 0.2);
-  --ink-black: #0f0f0f;
-  --paper-white: #fcfaf2;
-}
-
+[data-theme='light'],
 [data-theme='ink'] {
-  --bg-color: #f2ede4;
-  --card-bg: #fcfaf2;
-  --text-color: #1a1a1a;
-  --glass-bg: rgba(242, 237, 228, 0.9);
-  --glass-border: rgba(201, 23, 30, 0.4);
-  --ink-black: #0f0f0f;
-  --paper-white: #fcfaf2;
-}
-
-.bg-kanji {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  font-size: 60vh;
-  color: var(--jp-red);
-  opacity: 0.03;
-  pointer-events: none;
-  z-index: 0;
-  font-family: 'Noto Serif JP', serif;
-  font-weight: 900;
+  --bg-color: #f4f1ea;
+  --card-bg: #fcfbf9;
+  --text-color: #2c2a25;
+  --text-muted: #6b665c;
+  --border-color: #d1cbc1;
+  --shadow-color: rgba(0, 0, 0, 0.08);
 }
 
 body {
@@ -53,7 +33,11 @@ body {
   min-width: 320px;
   min-height: 100vh;
   overflow: hidden;
-  background: var(--bg-color);
+  background-color: var(--bg-color);
+  background-image: var(--paper-texture);
+  font-family: 'Kalam', cursive;
+  color: var(--text-color);
+  transition: background-color 0.5s ease, color 0.5s ease;
 }
 
 #app {
@@ -61,26 +45,26 @@ body {
   height: 100vh;
 }
 
-.serif {
-  font-family: 'Noto Serif JP', serif;
+.hand-font {
+  font-family: 'Kalam', cursive;
+}
+
+.serif-font {
+  font-family: 'Shippori Mincho', serif;
 }
 
 .app-container {
   width: 100%;
   height: 100%;
   position: relative;
+  overflow: hidden;
 }
 
-.glass-panel {
-  background: var(--glass-bg);
-  backdrop-filter: blur(10px);
-  border: 1px solid var(--glass-border);
-  border-radius: 4px;
-}
-
-.vertical-text {
-  writing-mode: vertical-rl;
-  text-orientation: mixed;
+.sketch-panel {
+  background: var(--card-bg);
+  border: 2px solid var(--border-color);
+  border-radius: 4px 8px 3px 6px;
+  box-shadow: 4px 4px 0 var(--shadow-color);
 }
 
 .vue-flow__node {
@@ -90,18 +74,27 @@ body {
   transform-style: preserve-3d !important;
 }
 
-.vue-flow__edge-path {
-  stroke: var(--jp-red) !important;
-  stroke-width: 2 !important;
-  opacity: 0.6;
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
 }
 
-::-webkit-scrollbar {
-  width: 4px;
-}
 ::-webkit-scrollbar-track {
-  background: var(--ink-black);
+  background: transparent;
 }
+
 ::-webkit-scrollbar-thumb {
-  background: var(--jp-red);
+  background: var(--border-color);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+h1,
+h2,
+h3,
+p {
+  margin: 0;
 }

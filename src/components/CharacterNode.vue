@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import { Handle, Position } from '@vue-flow/core'
 
 defineProps<{
   data: {
@@ -31,8 +32,8 @@ const handleMouseMove = (e: MouseEvent) => {
     const centerX = rect.width / 2
     const centerY = rect.height / 2
     
-    tiltX.value = (y - centerY) / 8
-    tiltY.value = (centerX - x) / 8
+    tiltX.value = (y - centerY) / 15
+    tiltY.value = (centerX - x) / 15
     rafId = null
   })
 }
@@ -50,7 +51,7 @@ const resetTilt = () => {
 <template>
   <div 
     ref="cardRef"
-    class="character-card" 
+    class="character-card sketch-panel" 
     :class="{ 'root-node': data.isRoot }"
     @mousemove="handleMouseMove"
     @mouseleave="resetTilt"
@@ -58,107 +59,146 @@ const resetTilt = () => {
       transform: `perspective(1000px) rotateX(${tiltX}deg) rotateY(${tiltY}deg) scale3d(1.02, 1.02, 1.02)`
     }"
   >
+    <div class="tape"></div>
+    
+    <Handle v-if="data.isRoot" type="source" :position="Position.Right" class="custom-handle" />
+    <Handle v-else type="target" :position="Position.Left" class="custom-handle" />
+
+    <div v-if="data.isRoot" class="root-badge hand-font">Protagonist</div>
+    
     <div class="card-content">
-      <img :src="data.image" alt="" />
+      <div class="image-wrapper">
+        <img :src="data.image" alt="" />
+      </div>
       
-      <div class="names">
-        <div class="native-name vertical-text serif">{{ data.nativeName }}</div>
-        <div class="full-name serif">{{ data.name }}</div>
-        <div v-if="data.animeTitle" class="anime-title">{{ data.animeTitle }}</div>
+      <div class="info-section">
+        <div class="native-name serif-font">{{ data.nativeName }}</div>
+        <div class="full-name hand-font">{{ data.name }}</div>
+        <div v-if="data.animeTitle" class="anime-title hand-font">{{ data.animeTitle }}</div>
       </div>
     </div>
-
-    <div v-if="data.isRoot" class="root-badge">START</div>
   </div>
 </template>
 
 <style scoped>
 .character-card {
-  background: var(--card-bg);
-  color: var(--text-color);
-  border: 4px solid #d4af37;
-  display: flex;
   position: relative;
-  min-width: 240px;
-  overflow: visible;
-  box-shadow: 10px 10px 0 rgba(0,0,0,0.2);
-  transition: transform 0.15s ease-out, box-shadow 0.3s ease;
+  min-width: 260px;
+  padding: 15px;
+  background-color: var(--card-bg);
+  transition: transform 0.2s ease-out, box-shadow 0.3s ease;
   cursor: pointer;
   transform-style: preserve-3d;
   will-change: transform;
   pointer-events: all !important;
 }
 
+.tape {
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%) rotate(-3deg);
+  width: 100px;
+  height: 25px;
+  background-color: var(--tape-color);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  z-index: 10;
+  opacity: 0.9;
+}
+
 .character-card:hover {
-  box-shadow: 15px 15px 0 rgba(188, 0, 45, 0.2);
+  box-shadow: 8px 8px 0 var(--shadow-color);
+  transform: translateY(-2px);
 }
 
 .root-node {
+  border-width: 3px;
   border-color: var(--jp-red);
-  box-shadow: 10px 10px 0 var(--jp-red);
 }
 
 .card-content {
   display: flex;
-  flex: 1;
-  background: linear-gradient(90deg, transparent 50%, rgba(212, 175, 55, 0.05) 100%);
-  transform: translateZ(20px);
-  transform-style: preserve-3d;
+  align-items: center;
+  gap: 1rem;
 }
 
-img {
-  width: 110px;
-  height: 160px;
+.image-wrapper {
+  width: 70px;
+  height: 100px;
+  overflow: hidden;
+  border: 2px solid var(--border-color);
+  background: #fff;
+  padding: 4px;
+  box-shadow: 2px 2px 0 var(--shadow-color);
+  transform: rotate(-2deg);
+}
+
+.image-wrapper img {
+  width: 100%;
+  height: 100%;
   object-fit: cover;
-  border-right: 2px solid var(--ink-black);
-  transform: translateZ(40px);
+  filter: grayscale(15%) sepia(25%) contrast(1.1);
 }
 
-.names {
+.info-section {
   flex: 1;
-  padding: 1rem;
   display: flex;
   flex-direction: column;
-  position: relative;
-  transform: translateZ(60px);
+  justify-content: center;
 }
 
 .native-name {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  opacity: 0.3;
   position: absolute;
-  right: 0.5rem;
-  top: 0.5rem;
-  font-size: 1.4rem;
-  font-weight: 900;
-  color: var(--text-color);
-  opacity: 0.9;
+  top: 5px;
+  right: 10px;
+  pointer-events: none;
 }
 
 .full-name {
-  font-size: 0.85rem;
+  font-size: 1.2rem;
   font-weight: 700;
-  margin-top: auto;
-  color: var(--jp-red);
-  letter-spacing: 0.05em;
-  border-top: 1px solid var(--glass-border);
-  padding-top: 0.5rem;
+  color: var(--text-color);
+  line-height: 1.2;
+  margin-bottom: 0.3rem;
+  border-bottom: 2px solid var(--border-color);
+  padding-bottom: 5px;
 }
 
 .anime-title {
-  font-size: 0.65rem;
-  opacity: 0.6;
-  margin-top: 0.2rem;
-  font-weight: 500;
+  font-size: 0.95rem;
+  color: var(--pencil-gray);
+  line-height: 1.3;
 }
 
 .root-badge {
   position: absolute;
-  top: 0;
-  left: 0;
+  bottom: -15px;
+  right: -10px;
   background: var(--jp-red);
-  color: white;
-  font-size: 0.6rem;
-  padding: 0.2rem 0.5rem;
-  font-weight: 900;
-  letter-spacing: 0.1em;
+  color: #fff;
+  font-size: 1.1rem;
+  padding: 0.2rem 0.8rem;
+  border: 2px solid var(--bg-color);
+  box-shadow: 2px 2px 0 var(--shadow-color);
+  transform: rotate(-5deg);
+  z-index: 5;
+}
+
+.custom-handle {
+  width: 14px;
+  height: 14px;
+  background: var(--card-bg);
+  border: 2px solid var(--pencil-gray);
+  border-radius: 50%;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.character-card:hover .custom-handle {
+  opacity: 1;
 }
 </style>
