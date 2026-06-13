@@ -27,8 +27,8 @@ importers:
         specifier: ^14.2.1
         version: 14.2.1(vue@3.5.33(typescript@6.0.3))
       ani-client:
-        specifier: ^2.1.3
-        version: 2.1.3
+        specifier: ^2.4.0
+        version: 2.4.0
       html-to-image:
         specifier: ^1.11.13
         version: 1.11.13
@@ -347,9 +347,9 @@ packages:
   alien-signals@3.1.2:
     resolution: {integrity: sha512-d9dYqZTS90WLiU0I5c6DHj/HcKkF8ZyGN3G5x8wSbslulz70KOxaqCT0hQCo9KOyhVqzqGojvNdJXoTumZOtcw==}
 
-  ani-client@2.1.3:
-    resolution: {integrity: sha512-cAwYXJ4RyAqFuEaQ6xV3+1qiumbpEE5VcvL54FQ2yPVgEC7IBUdS1D0EGaY7A4FMrSPJwQpSSUJMSx+DIfRi1A==}
-    engines: {node: '>=20'}
+  ani-client@2.4.0:
+    resolution: {integrity: sha512-ApaeRXg6gIuW3BI/jie/n4I9I2okadiMPhKSALs8npYkj2f1tMFRoqJdlFcQy/LRRCL/A5DWw9rTuxqlJZ3V1g==}
+    engines: {node: '>=22.13.0'}
 
   csstype@3.2.3:
     resolution: {integrity: sha512-z1HGKcYy2xA8AGQfwrn0PAy+PB7X/GSj3UVJW9qKyn43xWa+gl5nXmU4qqLMRzWVLFC8KusUX8T/0kCiOYpAIQ==}
@@ -496,6 +496,7 @@ packages:
 
   lucide-vue-next@1.0.0:
     resolution: {integrity: sha512-V6SPvx1IHTj/UY+FrIYWV5faISsPSb8BnWSFDxAtezWKvWc9ZZ40PDrdu1/Qb5vg4lHWr1hs1BAMGVGm6V1Xdg==}
+    deprecated: Package deprecated. Please use @lucide/vue instead.
     peerDependencies:
       vue: '>=3.0.1'
 
@@ -880,7 +881,7 @@ snapshots:
 
   alien-signals@3.1.2: {}
 
-  ani-client@2.1.3: {}
+  ani-client@2.4.0: {}
 
   csstype@3.2.3: {}
 

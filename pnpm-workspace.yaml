@@ -1,2 +1,6 @@
+allowBuilds:
+  vue-demi: true
+minimumReleaseAgeExclude:
+  - ani-client@2.4.0
 onlyBuiltDependencies:
   - vue-demi
